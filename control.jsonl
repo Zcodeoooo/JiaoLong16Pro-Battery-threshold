@@ -1,0 +1,2 @@
+{"time": "2026-10-06T20:12:19.608376+08:00", "operation": "session_start", "low": 60, "high": 80, "interval_seconds": 10, "duration_seconds": 0, "evidence": "charging_test.jsonl"}
+{"time": "2026-10-06T20:12:20.258128+08:00", "error": "WinRing0 DLL status=2; admin=False; EXE folder=C:\\Users\\48069\\Documents\\Codex\\2026-10-06\\ec-dsdt-ec-it5570\\outputs\\Windows\\. Status 2 means driver not loaded, 3 means driver file not found.", "automatic_retry": false}

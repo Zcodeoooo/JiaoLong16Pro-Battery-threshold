@@ -1,0 +1,88 @@
+$ python verify_static.py --ec C:/Users/48069/Desktop/ec.bin
+PASS original EC SHA256
+PASS firmware version initialization
+PASS 0x92 high-byte-first read through real firmware
+PASS 0x93 writes / 0x10-0x0E mailbox / actual switch helper
+PASS stop flag selects state 0x31 on AC
+PASS stop routine passes zero requested current to charger writer
+PASS complete stop dispatch never enables discharge/LEARN
+PASS manual stop calls discharge/LEARN helper with argument 0
+PASS 0x10-0x0F clears stop policy
+PASS unknown battery subcommand also returns 0x55: completion alone proves no action
+PASS 0x0C is forced discharge: actual state 0x30 dispatch invokes LEARN=1
+PASS native dual-threshold command stores upper=80 / lower=60
+PASS native initial SOC > upper invokes discharge/LEARN helper with argument 1
+PASS stop routine passes zero requested current to charger writer
+PASS native lower boundary 60 keeps hold state
+PASS native SOC 59 transitions to charge state
+PASS native SOC 80 returns from charge to hold state
+PASS 60/80 boundary semantics, previous stopped=False
+PASS 60/80 boundary semantics, previous stopped=True
+PASS wrong version / competing battery mode / busy mailbox / invalid SOC rejected
+PASS pending output aborts before command; no flush/retry
+{"result": "static checks passed", "hardware_verified": false}
+
+$ python verify_native_static.py --ec C:/Users/48069/Desktop/ec.bin
+PASS original EC hash for native checks
+PASS native host writes upper/lower/subcommand then trigger, no internal-state writes
+PASS actual scheduler selects native hold at initial SOC 78
+PASS default native initialization below upper never calls discharge helper with argument 1
+PASS native lower boundary 60 holds
+PASS native SOC 59 enters charging state
+PASS native SOC 79 retains charging state
+PASS native SOC 80 returns to hold without Windows threshold writes
+PASS identical settled native policy is idempotent even when SOC now exceeds upper
+{"time": "2026-10-06T18:56:18.301405+08:00", "phase": "normal_policy_prepared", "ec": {"version": [0, 40, 0, 0], "soc": 78, "ac": true, "battery_present": true, "charging": false, "discharging": false, "mode": 0, "state": 4, "mailbox_command": 0, "mailbox_result": 85, "requested_current_zero": true, "raw": {"8150": "00", "8151": "0F", "8152": "55", "8370": "04", "837C": "00", "837D": "00", "8394": "00", "8395": "00", "83A0": "00", "83A1": "50", "83A2": "3C", "83C0": "00", "8410": "00", "8411": "28", "8412": "00", "8413": "00", "8460": "03", "847C": "4E"}, "native_substate": 0, "native_high": 80, "native_low": 60, "mailbox_high": 80, "mailbox_low": 60, "native_enabled": false}}
+PASS updating active native policy uses original restore and firmware cleanup before reinitialization
+PASS native disable clears policy and native substate through ORIGINAL firmware cleanup
+PASS default SOC 80 refusal happens BEFORE all mailbox writes
+PASS default SOC 85 refusal happens BEFORE all mailbox writes
+PASS explicit advanced option preserves original above-upper discharge initialization branch
+PASS fresh below-lower native initialization enters charge state
+PASS explicit native disable also works with AC disconnected when firmware cleanup succeeds
+PASS competing native mode 01 refuses all mailbox writes
+PASS competing native mode 49 refuses all mailbox writes
+PASS native writer rejects internal-state, forced-discharge and invalid parameter writes
+PASS SOC rising during parameter preparation aborts BEFORE enable trigger
+PASS AC disconnect preserves native mode but ORIGINAL cleanup resets its substate
+PASS later AC reconnect above upper reenters ORIGINAL discharge initialization without a Windows command
+Native static checks passed; physical 0D threshold cycle NOT verified by these tests.
+
+$ python bm5235_battery.py status
+{"time": "2026-10-06T18:56:18.481210+08:00", "operation": "status", "writes_ec_ram": false, "windows": {"ac": true, "soc": 61, "battery_present": true, "charging": true}}
+
+$ python bm5235_native.py status
+{"time": "2026-10-06T18:56:18.542993+08:00", "operation": "status", "writes_ec_ram": false, "windows": {"ac": true, "soc": 61, "battery_present": true, "charging": true}}
+
+$ python bm5235_battery.py monitor --duration 2 --interval 2
+{"time": "2026-10-06T18:56:18.600021+08:00", "operation": "dry_run", "proposed_stop": false, "writes_ec_ram": false, "windows": {"ac": true, "soc": 61, "battery_present": true, "charging": true}}
+{"time": "2026-10-06T18:56:20.601241+08:00", "operation": "dry_run", "proposed_stop": true, "writes_ec_ram": false, "windows": {"ac": true, "soc": 100, "battery_present": true, "charging": true}}
+
+PASS CLI refuses stop without --enable-write, before loading any DLL
+
+PASS native CLI refuses enable without --enable-write, before loading any bridge/driver
+
+PASS Python source syntax
+
+$ python work/test_live_flow.py
+PASS healthy mode-only test stops once and restores once
+PASS incomplete EC transaction triggers no second write
+PASS unexpected discharge report restores policy and rejects result
+PASS Ctrl+C restores a healthy transport
+PASS 99% idle baseline cannot pass the default charging-test precondition
+PASS reported-rate verification distinguishes positive/zero/resumed, discharge, unknown and unavailable data
+PASS charging test requires and records a charge/stop/resume rate transition with a matched battery identity (mock)
+
+$ python work/test_control_flow.py
+PASS controller sequence 78/80/79/60/59/58 writes stop once at 80 and resume once at 59 (mock)
+PASS Ctrl+C between complete transactions restores startup normal policy (mock)
+PASS Ctrl+C inside an incomplete EC transaction poisons transport and prevents further I/O (mock)
+PASS launcher validates actual charging-test evidence without loading an I/O driver
+
+$ python work/test_native_flow.py
+PASS unexpected native discharge on a healthy transport uses original restore once (mock)
+PASS failed native transport closes bridge without any automatic restore/retry (mock)
+
+Static/mock tests use no physical EC I/O. Agent process remains non-administrator. User administrator-run charging_test.jsonl verifies charging at SOC 78, original mailbox 10/0E stops with reported charge/discharge rates 0/0, and 10/0F restores charging. Reported charge rates: 19420 -> 0 -> 19440. Capacity unchanged during the short test. Physical current was not independently measured. Full 60/80 battery cycle and sleep/long-term reliability remain unverified. No firmware flash was performed.
+
+PASS user administrator-run native_enable.jsonl and subsequent native_inspect.jsonl: original mailbox 10/0D configured upper 80/lower 60; SOC 61 holds stop in mode 48/state 32/substate 2, with reported charge/discharge rates 0/0. The separate readback after configuration process exit retained the same mode and thresholds. Native policy remains enabled; no resident Windows controller is required. Initial holding behavior agrees with original firmware. Full native threshold cycle and sleep/reset retention remain unverified. Offline AC-reconnect check shows firmware reinitializes the native substate and may request discharge when SOC exceeds the upper limit.

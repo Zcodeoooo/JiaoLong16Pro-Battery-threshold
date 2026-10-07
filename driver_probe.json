@@ -1,0 +1,63 @@
+{
+  "user_reported_driver_available": true,
+  "dll_version": "1.3.0.18",
+  "sys_authenticode_status_observed": "Valid",
+  "sys_authenticode_signer_observed": "E=hiyohiyo@crystalmark.info, CN=Noriyuki MIYAZAKI, C=JP",
+  "process_is_administrator_observed": false,
+  "direct_python_dll_init_status_observed": 3,
+  "native_same_directory_init_status_observed": 2,
+  "existing_winring_device_open_win32_error_observed": 2,
+  "ec_port_transactions_performed": true,
+  "ec_ram_control_writes_performed": true,
+  "firmware_flash_performed": false,
+  "next_required_evidence": "Native upper/lower threshold cycle and sleep/reset retention",
+  "files": [
+    {
+      "source": "E:\\dev\\code\\c# wpf\\JiaoLongPlus2.0\\bin\\Release\\net9.0-windows8.0\\WinRing0x64.dll",
+      "copy": "outputs\\Windows\\WinRing0x64.dll",
+      "sha256": "a746fd5728e7485f741cc330a279674bc8590b1b8007d8614046c49f58698485",
+      "copied_unchanged": true
+    },
+    {
+      "source": "E:\\dev\\code\\c# wpf\\JiaoLongPlus2.0\\bin\\Release\\net9.0-windows8.0\\WinRing0x64.sys",
+      "copy": "outputs\\Windows\\WinRing0x64.sys",
+      "sha256": "11bd2c9f9e2397c9a16e0990e4ed2cf0679498fe0fd418a3dfdac60b5c160ee5",
+      "copied_unchanged": true
+    }
+  ],
+  "note": "Signature validity does not prove current Windows loading policy permits this driver.",
+  "driver_loaded_in_user_administrator_session": true,
+  "live_ec_read_evidence": "ec_readonly.json",
+  "live_ec_version_raw": [
+    0,
+    40,
+    0,
+    0
+  ],
+  "live_ec_mode": 0,
+  "live_ec_control_evidence": "mode_test.jsonl",
+  "live_subcommands_observed_hex": [
+    "0E",
+    "0F"
+  ],
+  "live_mode_test_pass": true,
+  "live_test_started_charging": true,
+  "live_charging_evidence": "charging_test.jsonl",
+  "live_charging_stop_resume_pass": true,
+  "live_charging_initial_soc": 78,
+  "live_charging_rate_before_raw": 19420,
+  "live_charging_rate_stopped_raw": 0,
+  "live_charging_rate_restored_raw": 19440,
+  "physical_current_measured": false,
+  "native_tool_available": true,
+  "native_live_configuration_verified": true,
+  "native_policy_observed_after_process_exit": true,
+  "native_full_cycle_verified": false,
+  "native_enable_evidence": "native_enable.jsonl",
+  "native_enable_command_observed": true,
+  "native_enable_log_contains_error": false,
+  "native_live_low": 60,
+  "native_live_high": 80,
+  "native_live_substate": 2,
+  "native_inspect_evidence": "native_inspect.jsonl"
+}

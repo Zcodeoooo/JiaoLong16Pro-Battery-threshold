@@ -1,0 +1,248 @@
+{
+  "device_user_reported": "蛟龙16pro / BM5235",
+  "target_os": "Windows",
+  "resume_below_percent": 60,
+  "stop_at_percent": 80,
+  "ec_embedded_in_bios_file_offset_hex": "0x81000",
+  "entire_ec_matches_bios": true,
+  "ec_extra_byte_at_0x20000_hex": "ff",
+  "hardware_ec_io_performed": true,
+  "inputs": [
+    {
+      "path": "C:\\Users\\48069\\Desktop\\ec.bin",
+      "bytes": 131073,
+      "sha256": "7573b2cb494e9a308e2ab13bf5fcb5f90d0d111922e6cfe41487219159993430"
+    },
+    {
+      "path": "E:\\embedded tools\\IT5570_A_V0.3.1_U.pdf",
+      "bytes": 5247804,
+      "sha256": "01666ebe44ece4a436b5ffaad40c9570c17f0b3480862caf224953585c59102f"
+    },
+    {
+      "path": "E:\\embedded tools\\BIOS.bin_extracted\\BIOS-UEFI [0x001DFE90-0x021DFE90].bin",
+      "bytes": 33554432,
+      "sha256": "fb9e3e921ca119be7d3554246bd830cacef536116f5f7baa8c766a6ecd85a651"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\apic.dsl",
+      "bytes": 17666,
+      "sha256": "8e1cf100e9079a933c031f58787174388d713123df9b9dab4a6de9317e1af0f6"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\asf!.dsl",
+      "bytes": 6612,
+      "sha256": "e2e43b33ba72a11fd688afa243a206b3c4b8163cd74fc0da2d675a86cfeb3f4a"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\bgrt.dsl",
+      "bytes": 1685,
+      "sha256": "77c1e8d331c175b92a01a01f807ceabec41c6e789b0bea6763f6a6a33de2d946"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\boot.dsl",
+      "bytes": 1271,
+      "sha256": "3a98abaf4eb3588fe7a5fd1fa2e0a2d7e4550e440029ac3ebaf48e605c4a1f53"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\cdit.dsl",
+      "bytes": 1188,
+      "sha256": "9f443452180b0a5368276b3a780889aab566dfe994066b90b9edaacdbc516c62"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\crat.dsl",
+      "bytes": 38479,
+      "sha256": "da50cd61ec048a68f9eeb425181f0eb6921437a0a4a3da693e8eef00b47aeb13"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\dsdt.dsl",
+      "bytes": 292613,
+      "sha256": "ba802c450475c4612da35cdacf2710a448e507f223d29febd112bb74a601babe"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\facp.dsl",
+      "bytes": 10362,
+      "sha256": "9a6902f2fdac7677cbecb13cc4a207e1c9cda751edbc76baf0ab9c8f64655f53"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\fpdt.dsl",
+      "bytes": 1888,
+      "sha256": "25c3435e200f8c5c41e16fea7b67d90a5a2165bd1ab5845a1975f1b0c3302991"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\hpet.dsl",
+      "bytes": 1950,
+      "sha256": "de06939ad159a007e249a2eaaa403e2bb5bc37d79d1712bc13522d9fb9204399"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ivrs.dsl",
+      "bytes": 13958,
+      "sha256": "2193ec156d2c1970202ea2c7cab84558238bd776c0e5404b574040401c042a8a"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\mcfg.dsl",
+      "bytes": 1604,
+      "sha256": "013d856c578f2ab367301ea13da2fd906c7522b1b1b9e8cf4c8758ada4af55a1"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\msdm.dsl",
+      "bytes": 1635,
+      "sha256": "dcc015a071bf69519cdf1e58242e0d8671aa134991850dc2862dc5b041994a16"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\slic.dsl",
+      "bytes": 4076,
+      "sha256": "c95b180236447773204aaa383d051380f32f184d0179af5ab8d1b41a22f7751a"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt.dsl",
+      "bytes": 14967,
+      "sha256": "3bc955ba8c3a186448011d25d9e94c3626e408682fb712ff2a758b27420fd399"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt1.dsl",
+      "bytes": 247202,
+      "sha256": "d3f2785ee45f55528c406e72f5961533fab35e7b8d4d8fb7972bd250323a27b5"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt10.dsl",
+      "bytes": 87051,
+      "sha256": "f0b4d09ac8b48e01b6f1b7a445a9c6a7de09e6a6ad27e39ce98e221c47610670"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt11.dsl",
+      "bytes": 33513,
+      "sha256": "3be3edcfef98e63aa378a7b0322c9e2612570baa27da6d8ba56b6036c4c7e5a8"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt12.dsl",
+      "bytes": 8847,
+      "sha256": "446b220c0b232b14aee24446f2394fda2230c0dc4f09c23449dadf50324da5dc"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt13.dsl",
+      "bytes": 6083,
+      "sha256": "8c1d52a152abaf8ee3dcd760c9ea2f41b3613bfbae151f3b2da213f203e4461b"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt14.dsl",
+      "bytes": 11234,
+      "sha256": "a453a162590623409e8abfdb9614a458f84431452f98bce9c16ee8e468ee1ce4"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt15.dsl",
+      "bytes": 5312,
+      "sha256": "3f4320591b15b6c9b5e28de0df8991d4055f3c3c9404c3f167d0bf39421d3dbb"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt16.dsl",
+      "bytes": 17021,
+      "sha256": "7fae601da50a0077b9b18693f679b7612cb1fd8663c8fc0e57e87f4014bee723"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt2.dsl",
+      "bytes": 9932,
+      "sha256": "b559584273aed0cbaf1ee0121e2178fc91d8ee54ff3ef58eaed69891e0b8edec"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt3.dsl",
+      "bytes": 45464,
+      "sha256": "425ce6afc948b744f8a37fccf4ea6fcb25249e238d52a0e95c9e89cbc48cc48b"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt4.dsl",
+      "bytes": 51059,
+      "sha256": "b8874ea23ebad75ddd227853238e4c158a9632b4e6842ffaa75b4a1fa88c5912"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt5.dsl",
+      "bytes": 2060,
+      "sha256": "1a38983e60520cba11fccc960a30e4c18bc0ee242053897b56a62c12c62f15fa"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt6.dsl",
+      "bytes": 498315,
+      "sha256": "c21867f6273edc32bfd9078f0a527022e3fefb4e0c1f150f3c1ce583ba242084"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt7.dsl",
+      "bytes": 42615,
+      "sha256": "6454c0fc45055a41e4805c84e6f5f68fb11632cbe4ff697b2017d8e61aaafe65"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt8.dsl",
+      "bytes": 5424,
+      "sha256": "761a7463ec14a442ed7de624f8895270df724fbabfc5c11d0736df82646b439c"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\ssdt9.dsl",
+      "bytes": 189917,
+      "sha256": "b8dfcf8801c97639a33d885c12e4d10149eff280fd45d6d26e75ad7f0442497e"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\tpm2.dsl",
+      "bytes": 1591,
+      "sha256": "02879a99e59947a98960d7852377e9006e2651642de11a11a2d98485dd59a143"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\uefi.dsl",
+      "bytes": 3398,
+      "sha256": "cc06d1571b534e45e49577a7f47a77fe3812c883015434fd49446f715102c2f9"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\vfct.dsl",
+      "bytes": 224388,
+      "sha256": "707b60f8134ae536cbc79be53aac37bc7f6bc62662872791fa097f6868603999"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\wdat.dsl",
+      "bytes": 12091,
+      "sha256": "8c59244774b3d0d502be69b0e50e120280b3d511e2d20e25a921781d85ded856"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\wdrt.dsl",
+      "bytes": 2501,
+      "sha256": "d05b1ef271d466da6a3e0441e53eb70d88c6abb5dc9857859593b147aa187a5c"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\wsmt.dsl",
+      "bytes": 1388,
+      "sha256": "e57e17cb153b437fd2b8e566ef965bb1e06f62ad420c42e7329776acef13c53e"
+    },
+    {
+      "path": "E:\\embedded tools\\设备树\\xsdt.dsl",
+      "bytes": 4954,
+      "sha256": "cf0594eda68306c969c524cb2016649e7a92ee2f032cf5c7b06d2b05170566ea"
+    }
+  ],
+  "hardware_ec_control_write_performed": true,
+  "hardware_evidence": [
+    "ec_readonly.json",
+    "mode_test.jsonl",
+    "charging_test.jsonl",
+    "native_enable.jsonl",
+    "native_inspect.jsonl"
+  ],
+  "firmware_flash_performed": false,
+  "hardware_charging_stop_resume_verified": true,
+  "hardware_60_80_full_cycle_verified": false,
+  "native_tool_available": true,
+  "native_configuration_profile": {
+    "upper_mailbox_xram": "0x8153",
+    "lower_mailbox_xram": "0x8154",
+    "subcommand_xram": "0x8151",
+    "subcommand_hex": "0x0D",
+    "trigger_xram": "0x8150",
+    "main_command_hex": "0x10",
+    "expected_mode_hex": "0x48",
+    "expected_scheduler_state_hex": "0x32",
+    "default_requires_soc_below_upper": true,
+    "default_resident_control_program": false,
+    "sleep_reset_persistence_verified": false,
+    "ac_reconnect_reinitializes_substate_offline_verified": true,
+    "default_soc_guard_checks_configuration_time_only": true
+  },
+  "hardware_native_threshold_command_observed": true,
+  "hardware_native_configuration_verified": true,
+  "hardware_native_policy_observed_after_process_exit": true,
+  "hardware_native_full_cycle_verified": false
+}

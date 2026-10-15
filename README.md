@@ -60,10 +60,12 @@
 
 ### 设置充电阈值
 
+powershell
 ```powershell
 & 'NativeEnable.cmd' --low 60 --high 80 --allow-initial-discharge
 ```
 
+cmd
 ```cmd
 NativeEnable.cmd --low 60 --high 80 --allow-initial-discharge
 ```
@@ -76,11 +78,12 @@ NativeEnable.cmd --low 60 --high 80 --allow-initial-discharge
 ---
 
 ### 取消充电阈值（恢复默认）
-
+powershell
 ```powershell
 & 'NativeDisable.cmd'
 ```
 
+cmd
 ```cmd
 NativeDisable.cmd
 ```

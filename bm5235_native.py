@@ -233,13 +233,17 @@ def observe_native(ec, args):
 
 
 def execute(args):
+    no_observe = getattr(args, "no_observe", False)
     with t.SingleInstance():
         ports = t.NativeBridgePorts(args.bridge, allow_writes=args.operation in ("enable", "disable"))
         ec = NativeEC(ports)
         try:
             before = ec.snapshot()
-            t.emit({"phase": "before", "operation": args.operation, "ec": before,
-                    "windows": t.windows_status(), "battery_telemetry": telemetry.sample()})
+            event = {"phase": "before", "operation": args.operation, "ec": before,
+                     "windows": t.windows_status()}
+            if not no_observe:
+                event["battery_telemetry"] = telemetry.sample()
+            t.emit(event)
             if args.operation == "inspect":
                 return
             if args.operation == "disable":
@@ -250,7 +254,15 @@ def execute(args):
             t.emit({"phase": "native_reused" if after.get("configuration_reused") else "native_submitted",
                     "ec": after, "low": args.low, "high": args.high,
                     "initial_discharge_allowed": args.allow_initial_discharge})
-            observe_native(ec, args)
+            if no_observe:
+                t.emit({"phase": "complete", "native_enabled": True, "ec_autonomous": True,
+                        "resident_program_required": False, "low": args.low, "high": args.high,
+                        "ec": after, "observation_performed": False,
+                        "native_state_settled": after["state"] == NATIVE_STATE and after["native_substate"] in (2, 3),
+                        "initial_discharge_allowed": args.allow_initial_discharge,
+                        "note": "Command and threshold readback confirmed; configuration remains active. No observation requested."})
+            else:
+                observe_native(ec, args)
         except BaseException:
             t.emit({"phase": "exit_notice", "transport_healthy": not ec.poisoned,
                     "note": "Native policy may remain active. No blind retry/cleanup. Inspect, then explicitly disable if needed."})
@@ -272,6 +284,8 @@ def main(argv=None):
     p.add_argument("--allow-initial-discharge", action="store_true",
                    help="Explicitly permit the original native initialization discharge branch above the upper limit")
     p.add_argument("--observe-seconds", type=float, default=30)
+    p.add_argument("--no-observe", action="store_true",
+                   help="Return after command/threshold readback; do not wait for initialization or observe discharge")
     p.add_argument("--interval", type=float, default=5)
     p.add_argument("--log-file", type=Path)
     p.add_argument("--append-log", action="store_true", help="Append diagnostics instead of replacing the log")

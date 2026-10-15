@@ -14,8 +14,19 @@ import subprocess
 QUERY = r"""
 $ErrorActionPreference = 'Stop'
 try {
+    $capabilities = @{}
+    try {
+        Get-CimInstance -Namespace root/wmi -ClassName BatteryStaticData | ForEach-Object {
+            if ($null -ne $_.Capabilities) { $capabilities[$_.InstanceName] = $_.Capabilities }
+        }
+    } catch { }
     $cells = @(Get-CimInstance -Namespace root/wmi -ClassName BatteryStatus |
-        Select-Object InstanceName,PowerOnline,Charging,Discharging,ChargeRate,DischargeRate,RemainingCapacity,Voltage)
+        Select-Object InstanceName,PowerOnline,Charging,Discharging,ChargeRate,DischargeRate,RemainingCapacity,Voltage,
+            @{Name='RateUnit'; Expression={
+                if ($capabilities.ContainsKey($_.InstanceName)) {
+                    if (($capabilities[$_.InstanceName] -band 0x40000000) -ne 0) { 'relative' } else { 'mW' }
+                } else { 'unknown' }
+            }})
     $json = [ordered]@{available=($cells.Count -gt 0); batteries=$cells} | ConvertTo-Json -Compress -Depth 4
 } catch {
     $json = [ordered]@{available=$false; error=$_.Exception.Message; batteries=@()} | ConvertTo-Json -Compress

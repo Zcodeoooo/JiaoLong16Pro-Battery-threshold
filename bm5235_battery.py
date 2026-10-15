@@ -1,4 +1,4 @@
-"""BM5235 / MRID6 EC 00.28 battery-control RESEARCH PROTOTYPE.
+"""BM5235 / MRID6 EC 00.28 / 00.24 / 00.23 / 00.1F battery control.
 
 Default: Windows battery status only. No driver is loaded without an explicit
 raw-I/O option. Read README.md before using inspect / stop / resume / control.
@@ -19,7 +19,10 @@ import sys
 import threading
 import time
 
-EXPECTED_VERSION = (0x00, 0x28, 0x00, 0x00)
+
+
+
+
 READ_ADDRESSES = set(range(0x8410, 0x8414)) | {
     0x8150, 0x8151, 0x8152, 0x83C0, 0x8370, 0x8394, 0x8395,
     0x83A0, 0x83A1, 0x83A2, 0x837C, 0x837D, 0x8460, 0x847C,
@@ -257,8 +260,6 @@ class EC:
 
 
 def validate(ec_status, os_status, require_ac=True, allowed_modes=(0, 2)):
-    if tuple(ec_status["version"]) != EXPECTED_VERSION:
-        raise RuntimeError("EC version differs from analyzed 00.28.00.00; refusing writes")
     if ec_status["mode"] not in allowed_modes:
         raise RuntimeError("Another/unknown battery mode is active; refusing writes")
     if ec_status["mailbox_command"] != 0:
@@ -298,6 +299,10 @@ def set_stopped(ec, stopped, require_ac=True):
 def run_control(ec, args):
     initial = ec.snapshot()
     validate(initial, windows_status())
+    evidence_version = getattr(args, "verified_ec_version", None)
+    if evidence_version and version_text(initial["version"]) != evidence_version:
+        raise RuntimeError("Charging-test evidence is for EC " + evidence_version +
+                           "; live EC is " + version_text(initial["version"]) + "; no writes sent")
     if initial["mode"] == 2 and not args.take_over_stop:
         raise RuntimeError("Stop flag already set. Resolve its owner or explicitly use --take-over-stop.")
     desired = bool(initial["mode"])
@@ -307,6 +312,8 @@ def run_control(ec, args):
         while True:
             os_status, snapshot = windows_status(), ec.snapshot()
             validate(snapshot, os_status, require_ac=False)
+            if evidence_version and version_text(snapshot["version"]) != evidence_version:
+                raise RuntimeError("EC version changed from charging-test evidence; stopping without a write")
             if snapshot["ac"]:
                 desired = hysteresis(snapshot["soc"], desired, args.low, args.high)
                 if desired != bool(snapshot["mode"] & 2):

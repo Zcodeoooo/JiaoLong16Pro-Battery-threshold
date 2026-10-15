@@ -1,4 +1,4 @@
-"""BM5235 / MRID6 EC 00.28 native dual-threshold configuration.
+"""BM5235 / MRID6 EC 00.28 / 00.24 / 00.23 / 00.1F native thresholds.
 
 Default is Windows status only. Enable configures the existing 10/0D mailbox
 command, observes briefly, and EXITS WITHOUT RESTORING: the EC keeps control.
@@ -19,6 +19,7 @@ from run_control import Tee
 
 NATIVE_MODE = 0x48
 NATIVE_STATE = 0x32
+NORMAL_STATES = (0x01, 0x02, 0x04, 0x05, 0x10, 0x11, 0x12, 0x20)
 
 
 class NativeEC(t.EC):
@@ -28,10 +29,10 @@ class NativeEC(t.EC):
         return super().read(address)
 
     def mailbox_write(self, address, value):
-        fixed = {(0x8151, 0x0D), (0x8151, 0x0F), (0x8150, 0x10)}
+        fixed = {(0x8151, 0x0D), (0x8151, 0x0E), (0x8151, 0x0F), (0x8150, 0x10)}
         parameter = address in (0x8153, 0x8154) and isinstance(value, int) and 1 <= value <= 100
         if (address, value) not in fixed and not parameter:
-            raise ValueError("Only native threshold parameters / enable / restore mailbox writes are allowed")
+            raise ValueError("Only native threshold parameters / enable / stop / restore mailbox writes are allowed")
         self.transact(0x93, (address >> 8, address & 255, value))
 
     def snapshot(self):
@@ -41,6 +42,8 @@ class NativeEC(t.EC):
                        "native_high": int(raw["83A1"], 16), "native_low": int(raw["83A2"], 16),
                        "mailbox_high": self.read(0x8153), "mailbox_low": self.read(0x8154),
                        "native_enabled": result["mode"] == NATIVE_MODE})
+        result["native_state_clean"] = native_state_clean(result)
+        result["native_state_residual_inactive"] = normal_policy_active(result) and not result["native_state_clean"]
         return result
 
 
@@ -66,29 +69,87 @@ def finish_command(ec, expected_mode):
     return ec.snapshot()
 
 
-def wait_normal(ec):
+def native_state_clean(snapshot):
+    return snapshot["native_substate"] == 0 and int(snapshot["raw"]["8395"], 16) & 7 == 0
+
+
+def normal_policy_active(snapshot):
+    return (snapshot["mode"] == 0 and snapshot["state"] in NORMAL_STATES
+            and int(snapshot["raw"]["8394"], 16) == 0)
+
+
+def state_detail(snapshot):
+    return (f"mode={snapshot['mode']:02X}, state={snapshot['state']:02X}, "
+            f"83A0={snapshot['native_substate']:02X}, "
+            f"8394={snapshot['raw']['8394']}, 8395={snapshot['raw']['8395']}")
+
+
+def wait_normal(ec, require_clean=True):
     deadline = time.monotonic() + 8
     while True:
         snapshot = ec.snapshot()
         validate(snapshot, require_ac=False)
-        if (snapshot["mode"] == 0 and snapshot["native_substate"] == 0
-                and snapshot["state"] not in (0x31, NATIVE_STATE)
-                and int(snapshot["raw"]["8395"], 16) & 7 == 0):
+        if normal_policy_active(snapshot) and (not require_clean or native_state_clean(snapshot)):
             return snapshot
         if time.monotonic() >= deadline:
-            raise RuntimeError("Mode reset submitted, but firmware cleanup did not settle; no native enable sent")
+            condition = "Clean native initialization state" if require_clean else "Normal policy state"
+            raise RuntimeError(f"{condition} not confirmed ({state_detail(snapshot)}); no native enable sent")
         time.sleep(0.25)
 
 
 def disable_native(ec):
     before = ec.snapshot()
     validate(before, require_ac=False)
-    if before["mode"] != 0:
+    submitted = before["mode"] != 0
+    if submitted:
         check_mailbox(ec, before["mode"])
         ec.mailbox_write(0x8151, 0x0F)
         ec.mailbox_write(0x8150, 0x10)
         finish_command(ec, 0)
-    return wait_normal(ec)
+    # Inactive residuals do not mean the native policy is still enabled. The
+    # original selector skips cleanup when 8394 is already zero.
+    after = wait_normal(ec, require_clean=False)
+    after["restore_submitted"] = submitted
+    after["already_disabled"] = not submitted
+    return after
+
+
+def prepare_native_state(ec, snapshot):
+    if native_state_clean(snapshot):
+        return snapshot
+    if not normal_policy_active(snapshot) or snapshot["native_substate"] not in (0, 1, 2, 3):
+        raise RuntimeError(f"Unrecognized residual native state ({state_detail(snapshot)}); no preparation sent")
+    # Both original images require a nonzero 8394 before their cleanup call.
+    # Let the known stop state establish it, then use the original restore.
+    # This is one bounded, verified sequence, never a retry of a failed command.
+    t.emit({"phase": "native_state_cleanup_started", "ec": snapshot,
+            "sequence": ["10/0E", "verify stop state", "10/0F", "verify clean state"]})
+    validate(snapshot)
+    check_mailbox(ec, 0)
+    ec.mailbox_write(0x8151, 0x0E)
+    check_mailbox(ec, 0)
+    ec.mailbox_write(0x8150, 0x10)
+    finish_command(ec, 2)
+    deadline = time.monotonic() + 8
+    while True:
+        stopped = ec.snapshot()
+        validate(stopped)
+        if (stopped["mode"] == 2 and stopped["state"] == 0x31
+                and int(stopped["raw"]["8394"], 16) == 0x22
+                and stopped["requested_current_zero"]):
+            break
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"Preparation stop state not confirmed ({state_detail(stopped)}); "
+                               "no restore or native enable sent; inspect and explicitly disable")
+        time.sleep(0.25)
+    check_mailbox(ec, 2)
+    ec.mailbox_write(0x8151, 0x0F)
+    check_mailbox(ec, 2)
+    ec.mailbox_write(0x8150, 0x10)
+    finish_command(ec, 0)
+    after = wait_normal(ec, require_clean=True)
+    t.emit({"phase": "native_state_cleanup_complete", "ec": after})
+    return after
 
 
 def guard_start(snapshot, high, allow_initial_discharge):
@@ -114,7 +175,9 @@ def enable_native(ec, low=60, high=80, allow_initial_discharge=False):
         before = disable_native(ec)
         t.emit({"phase": "normal_policy_prepared", "ec": before})
     else:
-        before = wait_normal(ec)
+        before = wait_normal(ec, require_clean=False)
+    guard_start(before, high, allow_initial_discharge)
+    before = prepare_native_state(ec, before)
     guard_start(before, high, allow_initial_discharge)
     check_mailbox(ec, 0)
     # Data first, subcommand second, main command LAST. No writes to 83A0 or 83C0.

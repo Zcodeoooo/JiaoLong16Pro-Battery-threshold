@@ -19,8 +19,13 @@ def check_evidence(path):
     before = next((e for e in events if e.get("phase") == "before"), {})
     stop = next((e for e in events if e.get("phase") == "stop_result"), {})
     last = events[-1] if events else {}
-    if tuple(before.get("ec", {}).get("version", [])) != t.EXPECTED_VERSION:
-        raise RuntimeError("Charging-test log does not match EC 00.28.00.00")
+    version = tuple(before.get("ec", {}).get("version", []))
+    if version not in t.BATTERY_LOGIC_PROFILES:
+        raise RuntimeError("Charging-test log does not match a supported battery EC profile")
+    for event in events:
+        recorded = event.get("ec", {}).get("version")
+        if recorded is not None and tuple(recorded) != version:
+            raise RuntimeError("Charging-test log mixes different EC versions")
     required = (last.get("phase") == "complete", last.get("idle_only_test") is False,
                 last.get("normal_policy_restored") is True, last.get("charging_transition_observed") is True,
                 last.get("charging_resumed_observed") is True,
@@ -29,6 +34,7 @@ def check_evidence(path):
                 stop.get("reported_supply_pass") is True, stop.get("initially_charging") is True)
     if not all(required):
         raise RuntimeError("Complete a successful TestCharging.cmd run before starting control")
+    return version
 
 
 class Tee:
@@ -51,15 +57,16 @@ def main():
     if args.duration < 0:
         p.error("Duration must be nonnegative")
     root = Path(__file__).resolve().parent
-    check_evidence(root / "charging_test.jsonl")
+    evidence_version = check_evidence(root / "charging_test.jsonl")
     with (root / "control.jsonl").open("a", encoding="utf-8", buffering=1) as log:
         with contextlib.redirect_stdout(Tee(sys.stdout, log)):
             t.emit({"operation": "session_start", "low": 60, "high": 80,
                     "interval_seconds": 10, "duration_seconds": args.duration,
-                    "evidence": "charging_test.jsonl"})
+                    "evidence": "charging_test.jsonl", "evidence_ec_version": t.version_text(evidence_version)})
             try:
                 t.main(["control", "--board", "BM5235", "--bridge", str(root / "Windows/BM5235ECBridge.exe"),
                         "--experimental-raw-io", "--enable-write", "--verified-stop-on-ac",
+                        "--verified-ec-version", t.version_text(evidence_version),
                         "--low", "60", "--high", "80", "--interval", "10", "--duration", str(args.duration)])
             except BaseException as error:
                 t.emit({"error": str(error) or type(error).__name__, "automatic_retry": False})

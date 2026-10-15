@@ -46,7 +46,7 @@
 
 ## 🚀 操作步骤
 
-> ⚠️ **重要提示**：以下命令需在 **Windows PowerShell（管理员权限）** 中执行
+> ⚠️ **重要提示**：以下命令需在 **Windows PowerShell（管理员权限）或CMD (管理员权限)** 中执行
 
 ### 前置准备
 
@@ -64,6 +64,10 @@
 & 'NativeEnable.cmd' --low 60 --high 80 --allow-initial-discharge
 ```
 
+```cmd
+NativeEnable.cmd --low 60 --high 80 --allow-initial-discharge
+```
+
 **示例解读**：
 - 电量降至 **60%** 以下时开始充电
 - 电量达到 **80%** 时停止充电
@@ -75,6 +79,10 @@
 
 ```powershell
 & 'NativeDisable.cmd'
+```
+
+```cmd
+NativeDisable.cmd
 ```
 
 ---

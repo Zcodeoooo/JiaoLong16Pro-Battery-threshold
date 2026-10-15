@@ -111,15 +111,7 @@ NativeDisable.cmd
 
 ---
 
-## 📁 文件路径参考
 
-```
-
-NativeEnable.cmd      # 启用自定义阈值
-NativeDisable.cmd     # 禁用自定义阈值
-```
-
----
 
 > 📝 **更新日期**：2026-10-07  
 > 🔬 **技术基础**：基于 Insyde BIOS + IT5570 EC 逆向分析

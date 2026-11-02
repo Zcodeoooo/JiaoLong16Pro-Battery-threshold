@@ -6,6 +6,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Need 64-bit Windows Python with tkinter and PyInstaller (pip install -r requirements-build.txt).' }
     & $Python -m unittest discover -s tests -v
     if ($LASTEXITCODE -ne 0) { throw 'GUI tests failed.' }
+    & $Python tools\verify_cpu_protocol.py
+    if ($LASTEXITCODE -ne 0) { throw 'CPU WMI protocol checks failed.' }
     # Smoke-test the same payload with a diagnostic asInvoker manifest, so
     # unattended builds do not leave a UAC prompt waiting on the desktop.
     $previousDiagnostic = $env:BATTERY_THRESHOLD_DIAGNOSTIC_BUILD
@@ -26,7 +28,7 @@ try {
     $check = Start-Process -FilePath $checkExe -ArgumentList @('--check-package', ('"' + $report + '"')) -WindowStyle Hidden -Wait -PassThru
     if ($check.ExitCode -ne 0) { throw "Runtime check failed. See $report" }
     $result = Get-Content -LiteralPath $report -Raw -Encoding UTF8 | ConvertFrom-Json
-    if (-not $result.ui_ready -or -not $result.frozen) { throw "Invalid runtime report: $report" }
+    if (-not $result.ui_ready -or -not $result.cpu_ui_ready -or -not $result.frozen) { throw "Invalid runtime report: $report" }
     $exePath = Join-Path $PSScriptRoot 'dist\BatteryThreshold.exe'
     & $Python tools\verify_package.py $exePath $checkExe
     if ($LASTEXITCODE -ne 0) { throw 'Manifest or payload verification failed.' }

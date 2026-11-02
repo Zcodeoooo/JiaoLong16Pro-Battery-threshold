@@ -18,17 +18,23 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
-from tkinter import scrolledtext, ttk
+from tkinter import colorchooser, scrolledtext, ttk
 
 import bm5235_battery as battery
 import bm5235_native as native
 import battery_telemetry as telemetry
+import bm5235_lighting as lighting
+import bm5235_cpu as cpu_control
 
 
 APP_NAME = "蛟龙16Pro电池充电阈值"
 RESOURCE_DIR = Path(__file__).resolve().parent
 RESOURCE_FILES = ("BM5235ECBridge.exe", "WinRing0x64.dll", "WinRing0x64.sys")
 OPERATIONS = {"inspect": "读取 EC 状态", "enable": "启用充电阈值", "disable": "恢复默认充电"}
+LIGHTING_OPERATIONS = {"lighting_read": "读取灯光设置", "lighting_rgb": "应用 RGB 颜色",
+                       "lighting_mode": "应用灯效模式"}
+CPU_OPERATIONS = {"cpu_read": "读取 CPU 设置", "cpu_apply": "应用 CPU 自定义设置",
+                  "cpu_restore": "恢复 CPU 原厂档位"}
 PHASES = {
     "before": "已读取操作前状态",
     "normal_policy_prepared": "已恢复普通充电，准备配置",
@@ -204,6 +210,60 @@ def run_operation(operation, low, high, allow_discharge, log_dir, events):
     events.put(("finished", result))
 
 
+def run_lighting_operation(operation, rgb, mode, log_dir, events):
+    """Same serialized UI worker model; a separate, narrow lighting backend."""
+    log_path = log_dir / (datetime.now().strftime("%Y%m%d_%H%M%S_%f_") + operation + ".jsonl")
+    try:
+        if operation not in LIGHTING_OPERATIONS:
+            raise ValueError("未知灯光操作")
+        if not is_admin():
+            raise PermissionError("需要管理员权限，请重新启动程序并同意 Windows 权限请求。")
+        if operation == "lighting_rgb":
+            rgb = lighting.validate_rgb(rgb)
+        elif operation == "lighting_mode":
+            mode = lighting.validate_byte(mode, "灯效模式")
+        resources = resource_check()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with log_path.open("x", encoding="utf-8", buffering=1) as log:
+            with contextlib.redirect_stdout(EventStream(log, events)):
+                try:
+                    lighting.execute(operation, resources["BM5235ECBridge.exe"], rgb=rgb, mode=mode)
+                except Exception as error:
+                    battery.emit({"error": str(error), "automatic_retry": False})
+                    raise
+        result = OperationResult(operation, True, log_path)
+    except Exception as error:
+        result = OperationResult(operation, False, log_path, str(error))
+    events.put(("finished", result))
+
+
+def run_cpu_operation(operation, settings, log_dir, events):
+    log_path = log_dir / (datetime.now().strftime("%Y%m%d_%H%M%S_%f_") + operation + ".jsonl")
+    try:
+        if operation not in CPU_OPERATIONS:
+            raise ValueError("未知 CPU 操作")
+        if not is_admin():
+            raise PermissionError("需要管理员权限，请重新启动程序并同意 Windows 权限请求。")
+        if operation == "cpu_apply":
+            if not isinstance(settings, dict):
+                raise ValueError("请填写 CPU 参数。")
+            settings = cpu_control.validate_settings(settings.get("sustained_w"), settings.get("fast_w"),
+                                                       settings.get("temperature_c"))
+        resources = resource_check()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with log_path.open("x", encoding="utf-8", buffering=1) as log:
+            with contextlib.redirect_stdout(EventStream(log, events)):
+                try:
+                    cpu_control.execute(operation, resources["BM5235ECBridge.exe"], settings=settings)
+                except Exception as error:
+                    battery.emit({"error": str(error), "automatic_retry": False})
+                    raise
+        result = OperationResult(operation, True, log_path)
+    except Exception as error:
+        result = OperationResult(operation, False, log_path, str(error))
+    events.put(("finished", result))
+
+
 class BatteryApp:
     def __init__(self, root, log_dir=None, start_telemetry=True):
         self.root = root
@@ -215,6 +275,8 @@ class BatteryApp:
         self.last_log = None
         self.last_ec = None
         self.ec_seen_at = None
+        self.last_lighting = None
+        self.last_cpu = None
         self.low, self.high = tk.StringVar(value="60"), tk.StringVar(value="80")
         self.allow_discharge = tk.BooleanVar(value=False)
         self.soc = tk.StringVar(value="-- %")
@@ -225,10 +287,22 @@ class BatteryApp:
         self.policy = tk.StringVar(value="尚未读取 EC")
         self.policy_detail = tk.StringVar(value="点击「读取 EC 状态」核对当前配置")
         self.rule = tk.StringVar()
+        self.rgb = tuple(tk.StringVar(value="255") for _ in range(3))
+        self.effect_mode = tk.StringVar(value="1")
+        self.rgb_preview_text = tk.StringVar(value="#FFFFFF")
+        self.lighting_status = tk.StringVar(value="尚未读取灯光设置")
+        self.cpu_sustained = tk.StringVar(value="45")
+        self.cpu_fast = tk.StringVar(value="65")
+        self.cpu_temperature = tk.StringVar(value="90")
+        self.cpu_status = tk.StringVar(value="尚未读取 CPU 设置")
+        self.cpu_detail = tk.StringVar(value="输入参数后点击应用；启动程序和切换页签不会修改 CPU 设置。")
+        self.cpu_range = tk.StringVar(value="持续 5–101 W · 快速 5–120 W · 温度上限 40–95 ℃；读取后按 CPU 类别核对范围。")
         self.notice = tk.StringVar(value="就绪。阈值提交并回读确认后即可关闭窗口。")
         self._build()
         self.low.trace_add("write", self._update_rule)
         self.high.trace_add("write", self._update_rule)
+        for value in self.rgb:
+            value.trace_add("write", self._update_color_preview)
         self._update_rule()
         self._refresh_power()
         if start_telemetry:
@@ -260,6 +334,10 @@ class BatteryApp:
                         borderwidth=0, thickness=8)
         style.configure("Work.Horizontal.TProgressbar", background=ACCENT, troughcolor=BG,
                         borderwidth=0, thickness=3)
+        style.configure("TNotebook", background=BG, borderwidth=0)
+        style.configure("TNotebook.Tab", font=("Microsoft YaHei UI", 11), padding=(20, 10))
+        style.map("TNotebook.Tab", background=[("selected", CARD)],
+                  foreground=[("selected", ACCENT)])
 
         # Keep controls accessible on smaller screens and with Windows display
         # scaling, where font sizes can exceed fixed pixel window dimensions.
@@ -277,10 +355,10 @@ class BatteryApp:
             content_id, width=event.width, height=max(event.height, outer.winfo_reqheight())))
         root.bind("<MouseWheel>", lambda event: canvas.yview_scroll(-int(event.delta / 120), "units"))
         outer.columnconfigure(0, weight=1)
-        outer.rowconfigure(5, weight=1)
+        outer.rowconfigure(4, weight=1)
         header = tk.Frame(outer, bg=BG)
         header.grid(row=0, column=0, sticky="ew", pady=(0, 16))
-        self._label(header, "电池充电阈值", 24, bold=True, bg=BG).pack(anchor="w")
+        self._label(header, "电池、灯光与 CPU 控制", 24, bold=True, bg=BG).pack(anchor="w")
         self._label(header, "蛟龙16Pro 2023 / MRID6  ·  EC 原生控制，设置完成后无需常驻", 10,
                     color=MUTED, bg=BG).pack(anchor="w", pady=(3, 0))
 
@@ -320,8 +398,19 @@ class BatteryApp:
         self._label(status, size=9, variable=self.rate_detail, color=MUTED).grid(
             row=2, column=0, columnspan=2, sticky="w", pady=(6, 0))
 
-        settings = tk.Frame(outer, bg=CARD, padx=20, pady=16)
-        settings.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+        self.tabs = ttk.Notebook(outer)
+        self.tabs.grid(row=2, column=0, sticky="ew", pady=(0, 12))
+        battery_page = tk.Frame(self.tabs, bg=CARD)
+        lighting_page = tk.Frame(self.tabs, bg=CARD)
+        cpu_page = tk.Frame(self.tabs, bg=CARD)
+        battery_page.columnconfigure(0, weight=1)
+        lighting_page.columnconfigure(0, weight=1)
+        cpu_page.columnconfigure(0, weight=1)
+        self.tabs.add(battery_page, text="充电阈值")
+        self.tabs.add(lighting_page, text="RGB 与灯效")
+        self.tabs.add(cpu_page, text="CPU 功耗与温控")
+        settings = tk.Frame(battery_page, bg=CARD, padx=20, pady=16)
+        settings.grid(row=0, column=0, sticky="ew", pady=(0, 12))
         self._label(settings, "设置充电范围", 13, bold=True).pack(anchor="w")
         fields = tk.Frame(settings, bg=CARD)
         fields.pack(fill="x", pady=(12, 10))
@@ -353,20 +442,22 @@ class BatteryApp:
         self._label(settings, "注意需在低负载下开启,高负载下有可能会欠电关机,开启后插电时消耗电池。默认要求当前电量低于停止阈值。", 9,
                     color=MUTED).pack(anchor="w", pady=(3, 0))
 
-        actions = tk.Frame(outer, bg=BG)
-        actions.grid(row=3, column=0, sticky="ew", pady=(0, 10))
+        actions = tk.Frame(battery_page, bg=CARD, padx=20)
+        actions.grid(row=1, column=0, sticky="ew", pady=(0, 16))
         self.enable_button = ttk.Button(actions, text="启用充电阈值", style="Primary.TButton",
                                         command=lambda: self.start("enable"))
         self.enable_button.pack(side="left", padx=(0, 10))
         self.disable_button = ttk.Button(actions, text="恢复默认充电", command=lambda: self.start("disable"))
         self.disable_button.pack(side="left")
         self._label(actions, "管理员模式" if self.admin else "缺少管理员权限", 9,
-                    color="#198260" if self.admin else MUTED, bg=BG).pack(side="right")
+                    color="#198260" if self.admin else MUTED, bg=CARD).pack(side="right")
 
+        self._build_lighting(lighting_page)
+        self._build_cpu(cpu_page)
         self._label(outer, size=10, variable=self.notice, bg=BG, wraplength=800,
-                    justify="left").grid(row=4, column=0, sticky="ew", pady=(0, 8))
+                    justify="left").grid(row=3, column=0, sticky="ew", pady=(0, 8))
         logs = tk.Frame(outer, bg=CARD, padx=14, pady=10)
-        logs.grid(row=5, column=0, sticky="nsew")
+        logs.grid(row=4, column=0, sticky="nsew")
         log_header = tk.Frame(logs, bg=CARD)
         log_header.pack(fill="x", pady=(0, 6))
         self._label(log_header, "操作记录", 10, bold=True).pack(side="left")
@@ -375,9 +466,9 @@ class BatteryApp:
                                                  bg="#F8FAFD", fg=MUTED, font=("Microsoft YaHei UI", 9))
         self.log_view.pack(fill="both", expand=True)
         self.progress = ttk.Progressbar(outer, mode="indeterminate", style="Work.Horizontal.TProgressbar")
-        self.progress.grid(row=6, column=0, sticky="ew", pady=(10, 5))
+        self.progress.grid(row=5, column=0, sticky="ew", pady=(10, 5))
         self._label(outer, "适用：本项目 蛟龙16Pro 2023 机型。大负载限充可能欠电关机；重新插电可能触发初始化放电。", 9,
-                    color=MUTED, bg=BG, wraplength=810, justify="left").grid(row=7, column=0, sticky="w")
+                    color=MUTED, bg=BG, wraplength=810, justify="left").grid(row=6, column=0, sticky="w")
         self._set_busy(False)
         self._log("窗口已就绪。电量及充放电速率约每 5 秒更新；EC 配置手动读取。")
         root.update_idletasks()
@@ -402,6 +493,131 @@ class BatteryApp:
         self.low.set(str(low))
         self.high.set(str(high))
 
+    def _build_lighting(self, outer):
+        card = tk.Frame(outer, bg=CARD, padx=20, pady=16)
+        card.grid(row=0, column=0, sticky="ew", pady=(0, 4))
+        card.columnconfigure(0, weight=1)
+        card.columnconfigure(1, weight=1)
+        self._label(card, "RGB 与灯效", 13, bold=True).grid(row=0, column=0, sticky="w")
+        self._label(card, "支持 EC 00.23 / 00.28", 9, color=MUTED).grid(row=0, column=1, sticky="e")
+        colors = tk.Frame(card, bg=CARD)
+        colors.grid(row=1, column=0, sticky="nw", pady=(12, 8))
+        self.lighting_inputs = []
+        for i, (title, variable) in enumerate(zip(("R 红", "G 绿", "B 蓝"), self.rgb)):
+            column = tk.Frame(colors, bg=CARD)
+            column.grid(row=0, column=i, sticky="w", padx=(0, 12))
+            self._label(column, title, 9, color=MUTED).pack(anchor="w")
+            spin = ttk.Spinbox(column, from_=0, to=255, width=4, textvariable=variable,
+                               font=("Microsoft YaHei UI", 12))
+            spin.pack(anchor="w", pady=(5, 0))
+            self.lighting_inputs.append(spin)
+        preview = tk.Frame(colors, bg=CARD)
+        preview.grid(row=1, column=0, columnspan=3, sticky="w", pady=(10, 0))
+        self.color_swatch = tk.Label(preview, bg="#FFFFFF", width=4, relief="solid", bd=1)
+        self.color_swatch.pack(side="left", padx=(0, 8))
+        self._label(preview, size=10, variable=self.rgb_preview_text).pack(side="left", padx=(0, 10))
+        choose = ttk.Button(preview, text="选择颜色…", style="Small.TButton", command=self.choose_color)
+        choose.pack(side="left")
+        self.color_buttons = [choose]
+        presets = tk.Frame(colors, bg=CARD)
+        presets.grid(row=2, column=0, columnspan=3, sticky="w", pady=(8, 0))
+        for title, rgb in (("红", (255, 0, 0)), ("绿", (0, 255, 0)), ("蓝", (0, 0, 255)),
+                           ("紫", (170, 0, 255)), ("白", (255, 255, 255))):
+            button = ttk.Button(presets, text=title, width=3, style="Small.TButton",
+                                command=lambda value=rgb: self.set_rgb(value))
+            button.pack(side="left", padx=(0, 5))
+            self.color_buttons.append(button)
+        effects = tk.Frame(card, bg=CARD)
+        effects.grid(row=1, column=1, sticky="nw", padx=(24, 0), pady=(12, 8))
+        self._label(effects, "灯效模式编号（0–255）", 10, color=MUTED).pack(anchor="w")
+        mode = ttk.Spinbox(effects, from_=0, to=255, width=6, textvariable=self.effect_mode,
+                           font=("Microsoft YaHei UI", 12))
+        mode.pack(anchor="w", pady=(6, 8))
+        self.lighting_inputs.append(mode)
+        row = tk.Frame(effects, bg=CARD)
+        row.pack(anchor="w")
+        for value in (1, 2):
+            button = ttk.Button(row, text=f"模式 {value}", style="Small.TButton",
+                                command=lambda value=value: self.effect_mode.set(str(value)))
+            button.pack(side="left", padx=(0, 6))
+            self.color_buttons.append(button)
+        self._label(effects, "编号保留固件定义；其他编号的灯效名称尚未确认。", 9,
+                    color=MUTED, wraplength=280, justify="left").pack(anchor="w", pady=(8, 0))
+        row = tk.Frame(card, bg=CARD)
+        row.grid(row=2, column=0, columnspan=2, sticky="w", pady=(3, 7))
+        self.lighting_buttons = []
+        for text, operation in (("读取灯光", "lighting_read"), ("应用 RGB", "lighting_rgb"),
+                                 ("应用灯效", "lighting_mode")):
+            button = ttk.Button(row, text=text, style="Small.TButton",
+                                command=lambda op=operation: self.start_lighting(op))
+            button.pack(side="left", padx=(0, 8))
+            self.lighting_buttons.append(button)
+        self._label(card, size=9, variable=self.lighting_status, color=MUTED,
+                    wraplength=720, justify="left").grid(row=3, column=0, columnspan=2, sticky="w")
+        self._label(card, "颜色预览和模式选择仅修改输入，点击对应的「应用」按钮后生效。", 9,
+                    color=MUTED).grid(row=4, column=0, columnspan=2, sticky="w", pady=(4, 0))
+
+    def _update_color_preview(self, *_):
+        try:
+            rgb = lighting.validate_rgb([v.get() for v in self.rgb])
+            color = "#" + "".join(f"{v:02X}" for v in rgb)
+            self.color_swatch.configure(bg=color)
+            self.rgb_preview_text.set(color)
+        except ValueError:
+            self.rgb_preview_text.set("请输入 0–255")
+
+    def set_rgb(self, rgb):
+        if self.busy:
+            return
+        for variable, value in zip(self.rgb, lighting.validate_rgb(rgb)):
+            variable.set(str(value))
+
+    def choose_color(self):
+        if self.busy:
+            return
+        try:
+            rgb = lighting.validate_rgb([v.get() for v in self.rgb])
+            initial = "#" + "".join(f"{v:02X}" for v in rgb)
+        except ValueError:
+            initial = "#FFFFFF"
+        _rgb, color = colorchooser.askcolor(color=initial, parent=self.root, title="选择 RGB 颜色")
+        if color:
+            self.set_rgb(tuple(int(color[i:i+2], 16) for i in (1, 3, 5)))
+
+    def start_lighting(self, operation):
+        if self.busy or operation not in LIGHTING_OPERATIONS:
+            return
+        if not self.admin:
+            self.notice.set("需要管理员权限，请重新启动程序并同意 Windows 权限请求。")
+            return
+        rgb, mode = None, None
+        try:
+            if operation == "lighting_rgb":
+                rgb = lighting.validate_rgb([v.get() for v in self.rgb])
+            elif operation == "lighting_mode":
+                mode = lighting.validate_byte(self.effect_mode.get(), "灯效模式")
+        except ValueError as error:
+            self.notice.set(str(error))
+            return
+        self._set_busy(True)
+        self.notice.set(LIGHTING_OPERATIONS[operation] + "，正在读取并核对…")
+        self._log(LIGHTING_OPERATIONS[operation])
+        threading.Thread(target=run_lighting_operation, args=(operation, rgb, mode, self.log_dir, self.events),
+                         name="ec-lighting-operation", daemon=False).start()
+
+    def _show_lighting(self, data, operation):
+        self.last_lighting = data
+        version = ".".join(f"{v:02X}" for v in data.get("version", []))
+        version_text = f"EC {version} · " if version else ""
+        self.lighting_status.set(version_text + f"已回读：模式 {data['mode']} · {data['hex']} · "
+                                 + datetime.now().strftime("%H:%M:%S"))
+        if operation == "lighting_read":
+            # A deliberate read loads both controls. Applying one setting
+            # must not discard an unsaved edit in the other control.
+            self.effect_mode.set(str(data["mode"]))
+            for variable, value in zip(self.rgb, data["rgb"]):
+                variable.set(str(value))
+
     def _refresh_power(self):
         try:
             status = battery.windows_status()
@@ -414,6 +630,96 @@ class BatteryApp:
         except Exception as error:
             self.power.set("电池状态读取失败：" + str(error))
         self.root.after(5000, self._refresh_power)
+
+    def _build_cpu(self, page):
+        card = tk.Frame(page, bg=CARD, padx=20, pady=16)
+        card.grid(row=0, column=0, sticky="ew", pady=(0, 4))
+        card.columnconfigure(0, weight=1)
+        self._label(card, "CPU 自定义功耗与温控", 13, bold=True).grid(row=0, column=0, sticky="w")
+        self._label(card, "支持 EC 00.23 / 00.28 · 原厂 ACPI / SMU 接口", 9,
+                    color=MUTED).grid(row=1, column=0, sticky="w", pady=(5, 0))
+        fields = tk.Frame(card, bg=CARD)
+        fields.grid(row=2, column=0, sticky="ew", pady=(14, 10))
+        self.cpu_inputs = []
+        for i, (title, variable, minimum, maximum, unit) in enumerate((
+                ("持续功耗", self.cpu_sustained, 5, 101, "W"),
+                ("快速功耗（短时）", self.cpu_fast, 5, 120, "W"),
+                ("温度上限", self.cpu_temperature, 40, 95, "℃"))):
+            fields.columnconfigure(i, weight=1)
+            field = tk.Frame(fields, bg=CARD)
+            field.grid(row=0, column=i, sticky="w", padx=(0, 16))
+            self._label(field, title, 10, color=MUTED).pack(anchor="w")
+            line = tk.Frame(field, bg=CARD)
+            line.pack(anchor="w", pady=(7, 0))
+            spin = ttk.Spinbox(line, from_=minimum, to=maximum, width=5,
+                               textvariable=variable, font=("Microsoft YaHei UI", 18))
+            spin.pack(side="left")
+            self._label(line, unit, 12, color=MUTED).pack(side="left", padx=(6, 0))
+            self.cpu_inputs.append(spin)
+        self._label(card, size=9, variable=self.cpu_range, color=MUTED,
+                    wraplength=720, justify="left").grid(row=3, column=0, sticky="w")
+        self._label(card, "启用自定义模式需插电，且适配器额定功率大于 200 W。", 10,
+                    color=MUTED).grid(row=4, column=0, sticky="w", pady=(8, 8))
+        buttons = tk.Frame(card, bg=CARD)
+        buttons.grid(row=5, column=0, sticky="w", pady=(3, 8))
+        self.cpu_buttons = []
+        for title, operation in (("读取 CPU 设置", "cpu_read"), ("应用并启用自定义", "cpu_apply"),
+                                  ("退出自定义 / 恢复原厂", "cpu_restore")):
+            button = ttk.Button(buttons, text=title, style="Small.TButton",
+                                command=lambda op=operation: self.start_cpu(op))
+            button.pack(side="left", padx=(0, 8))
+            self.cpu_buttons.append(button)
+        self._label(card, size=10, variable=self.cpu_status, color=ACCENT, wraplength=720,
+                    justify="left").grid(row=6, column=0, sticky="w", pady=(2, 4))
+        self._label(card, size=9, variable=self.cpu_detail, color=MUTED, wraplength=720,
+                    justify="left").grid(row=7, column=0, sticky="w")
+        self._label(card, "这里显示设置值；实际功耗随负载变化，固件也可能进一步限值。", 9,
+                    color=MUTED).grid(row=8, column=0, sticky="w", pady=(5, 0))
+
+    def start_cpu(self, operation):
+        if self.busy or operation not in CPU_OPERATIONS:
+            return
+        if not self.admin:
+            self.cpu_status.set("需要管理员权限，请重新启动程序并同意 Windows 权限请求。")
+            return
+        settings = None
+        if operation == "cpu_apply":
+            try:
+                settings = cpu_control.validate_settings(
+                    self.cpu_sustained.get(), self.cpu_fast.get(), self.cpu_temperature.get(),
+                    self.last_cpu.get("cpu_type") if self.last_cpu else None)
+            except ValueError as error:
+                self.cpu_status.set(str(error))
+                return
+        self._set_busy(True)
+        self.cpu_status.set(CPU_OPERATIONS[operation] + "，正在通过原厂接口核对…")
+        self.notice.set(CPU_OPERATIONS[operation] + "，请等待操作完成。")
+        self._log(CPU_OPERATIONS[operation])
+        threading.Thread(target=run_cpu_operation, args=(operation, settings, self.log_dir, self.events),
+                         name="oem-cpu-operation", daemon=False).start()
+
+    def _show_cpu(self, data, operation):
+        self.last_cpu = data
+        maximum = cpu_control.CPU_MAX_SUSTAINED.get(data["cpu_type"], cpu_control.MAX_SUSTAINED)
+        self.cpu_inputs[0].configure(to=maximum)
+        self.cpu_range.set(f"持续 5–{maximum} W · 快速 5–120 W · 温度上限 40–95 ℃。")
+        version = ".".join(f"{v:02X}" for v in data["version"])
+        mode = "自定义已启用" if data["custom_enabled"] else "自定义未启用"
+        self.cpu_status.set(f"{mode} · 适配器 {data['adapter_w']} W · EC {version}")
+        if data["custom_enabled"]:
+            self.cpu_detail.set(f"请求设置：持续 {data['sustained_w']} W / 快速 {data['fast_w']} W / "
+                                f"温度上限 {data['temperature_c']} ℃ · 已回读原厂接口状态。")
+        else:
+            self.cpu_detail.set("自定义模式未启用；输入框用于下一次自定义设置。")
+        if operation == "cpu_read":
+            try:
+                settings = cpu_control.validate_settings(data["sustained_w"], data["fast_w"],
+                                                         data["temperature_c"], data["cpu_type"])
+            except ValueError:
+                return  # Empty/uninitialized custom caches are not usable defaults.
+            self.cpu_sustained.set(str(settings["sustained_w"]))
+            self.cpu_fast.set(str(settings["fast_w"]))
+            self.cpu_temperature.set(str(settings["temperature_c"]))
 
     def _refresh_telemetry(self):
         self.root.after(5000, self._refresh_telemetry)
@@ -438,9 +744,10 @@ class BatteryApp:
     def _set_busy(self, busy):
         self.busy = busy
         state = "disabled" if busy else "normal"
-        for widget in [*self.inputs, *self.preset_buttons, self.discharge_check]:
+        for widget in [*self.inputs, *self.preset_buttons, self.discharge_check,
+                       *self.lighting_inputs, *self.color_buttons, *self.cpu_inputs]:
             widget.configure(state=state)
-        for button in (self.enable_button, self.disable_button, self.inspect_button):
+        for button in (self.enable_button, self.disable_button, self.inspect_button, *self.lighting_buttons, *self.cpu_buttons):
             button.configure(state="normal" if self.admin and not busy else "disabled")
         if busy:
             self.progress.start(12)
@@ -500,6 +807,15 @@ class BatteryApp:
         self.policy_detail.set(f"{detail}\n最后读取 {self.ec_seen_at}，当前显示为最近快照")
 
     def _handle_event(self, event):
+        if event.get("phase") == "cpu_complete":
+            self._show_cpu(event["cpu"], event["cpu_operation"])
+            self._log({"cpu_read": "CPU 当前设置已读取。", "cpu_apply": "CPU 原厂接口和请求设置已核对。",
+                       "cpu_restore": "CPU 已退出自定义并恢复原厂档位。"}[event["cpu_operation"]])
+            return
+        if event.get("phase") == "lighting_complete":
+            self._show_lighting(event["lighting"], event["lighting_operation"])
+            self._log("灯光设置已回读：" + event["lighting"]["hex"] + f"，模式 {event['lighting']['mode']}。")
+            return
         if "ec" in event:
             self._show_ec(event["ec"])
         if "battery_telemetry" in event:
@@ -520,12 +836,25 @@ class BatteryApp:
         self.last_log = result.log_path if result.log_path.is_file() else None
         if result.success:
             messages = {"inspect": "EC 状态已读取。", "enable": "阈值已提交并回读确认。EC 自行控制充电，现在可以关闭窗口。",
-                        "disable": "已恢复默认充电策略。"}
+                        "disable": "已恢复默认充电策略。", "lighting_read": "灯光设置已读取并填入界面。",
+                        "lighting_rgb": "RGB 颜色已提交并回读确认。", "lighting_mode": "灯效模式已提交并回读确认。",
+                        "cpu_read": "CPU 设置已读取。", "cpu_apply": "CPU 自定义参数已通过原厂接口提交并回读确认。",
+                        "cpu_restore": "CPU 已退出自定义并恢复原厂档位。"}
             self.notice.set(messages[result.operation])
         else:
             # A snapshot from before a failed command cannot prove current mode.
-            self.policy.set("状态需要重新读取")
-            self.policy_detail.set("操作未完成；点击「读取 EC 状态」核对配置")
+            if result.operation in CPU_OPERATIONS:
+                self.last_cpu = None
+                self.cpu_status.set(friendly_error(result.error))
+                self.cpu_detail.set("请先读取当前状态，再决定是否恢复原厂档位。")
+            elif result.operation in LIGHTING_OPERATIONS:
+                self.last_lighting = None
+                # Keep the reason beside the buttons, even when the global
+                # notice below this tab is outside the visible scroll area.
+                self.lighting_status.set(friendly_error(result.error) + " 请重新读取灯光设置。")
+            else:
+                self.policy.set("状态需要重新读取")
+                self.policy_detail.set("操作未完成；点击「读取 EC 状态」核对配置")
             self.notice.set(friendly_error(result.error))
             self._log("操作未完成：" + result.error)
         if self.last_log:
@@ -596,6 +925,9 @@ def check_package(report_path):
         report["main_action_state"] = str(app.enable_button["state"])
         report["telemetry"] = rate_data
         report["displayed_rates"] = [app.charge_rate.get(), app.discharge_rate.get()]
+        report["cpu_ui_ready"] = len(app.cpu_buttons) == 3 and len(app.tabs.tabs()) == 3
+        report["cpu_default_inputs"] = [app.cpu_sustained.get(), app.cpu_fast.get(), app.cpu_temperature.get()]
+        report["cpu_wmi_invoked"] = False
         report["ui_ready"] = True
         report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     finally:

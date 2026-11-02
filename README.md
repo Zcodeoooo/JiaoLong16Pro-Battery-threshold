@@ -41,3 +41,7 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 输出为 `dist\BatteryThreshold.exe` 和 `dist\使用说明.md`。构建脚本会执行界面 / 参数 / 后端对接测试，使用相同程序内容的诊断构建验证 Tk、速率查询、内置桥接程序和资源，再核对发布版的管理员清单和全部内置内容。验证只读取 Windows 电池状态，不加载 EC 驱动或修改阈值。硬件写入和完整充放电循环需要用户在适用机型上另行验证。
 
 命令行原有观察行为保持不变；可给 `bm5235_native.py enable` 加 `--no-observe` 使用与图形版相同的立即返回方式。
+
+## 开源许可
+
+[MIT开源许可](LICENSE.txt)

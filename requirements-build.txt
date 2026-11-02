@@ -1,0 +1,2 @@
+# Only needed on the build machine. End users do not need Python or pip.
+PyInstaller==6.17.0

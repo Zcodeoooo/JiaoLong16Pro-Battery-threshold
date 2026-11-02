@@ -1,0 +1,62 @@
+{
+  "frozen": true,
+  "resources": {
+    "BM5235ECBridge.exe": "1a52f9907605acb8446947208c8cfdf18fa23adaa54ff7ee03b167c2328c2eaf",
+    "WinRing0x64.dll": "a746fd5728e7485f741cc330a279674bc8590b1b8007d8614046c49f58698485",
+    "WinRing0x64.sys": "11bd2c9f9e2397c9a16e0990e4ed2cf0679498fe0fd418a3dfdac60b5c160ee5"
+  },
+  "ec_accessed": false,
+  "bridge_status": {
+    "operation": "status",
+    "writes_ec_ram": false,
+    "admin": false,
+    "windows": {
+      "ac": true,
+      "soc": 99,
+      "battery_present": true,
+      "charging": false
+    },
+    "time": "2026-10-30T16:59:43.1607139+08:00"
+  },
+  "windows_status": {
+    "ac": true,
+    "soc": 99,
+    "battery_present": true,
+    "charging": false
+  },
+  "window_title": "蛟龙16Pro电池充电阈值 · BM5235",
+  "tk_version": "8.6.15",
+  "window_size": [
+    880,
+    800
+  ],
+  "admin": false,
+  "main_action_state": "disabled",
+  "power_flag_buttons": [
+    "读取当前值",
+    "关闭网络唤醒",
+    "开启网络唤醒"
+  ],
+  "power_flag_status": "bit 4 尚未读取",
+  "telemetry": {
+    "available": true,
+    "batteries": [
+      {
+        "InstanceName": "ACPI\\PNP0C0A\\1_0",
+        "PowerOnline": true,
+        "Charging": false,
+        "Discharging": false,
+        "ChargeRate": 0,
+        "DischargeRate": 0,
+        "RemainingCapacity": 59400,
+        "Voltage": 15400,
+        "RateUnit": "unknown"
+      }
+    ]
+  },
+  "displayed_rates": [
+    "0（原始值）",
+    "0（原始值）"
+  ],
+  "ui_ready": true
+}

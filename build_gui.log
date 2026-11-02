@@ -1,0 +1,121 @@
+test_failure_invalidates_stale_snapshot (test_battery_gui.InterfaceTests.test_failure_invalidates_stale_snapshot) ... ok
+test_flag_actions_ignore_threshold_fields (test_battery_gui.InterfaceTests.test_flag_actions_ignore_threshold_fields) ... ok
+test_flag_buttons_share_busy_and_admin_gates (test_battery_gui.InterfaceTests.test_flag_buttons_share_busy_and_admin_gates) ... ok
+test_flag_event_shows_readback_and_failure_clears_it (test_battery_gui.InterfaceTests.test_flag_event_shows_readback_and_failure_clears_it) ... ok
+test_inspect_and_restore_ignore_invalid_threshold_fields (test_battery_gui.InterfaceTests.test_inspect_and_restore_ignore_invalid_threshold_fields) ... ok
+test_invalid_threshold_cannot_start_enable (test_battery_gui.InterfaceTests.test_invalid_threshold_cannot_start_enable) ... ok
+test_nonadmin_actions_are_disabled (test_battery_gui.InterfaceTests.test_nonadmin_actions_are_disabled) ... ok
+test_presets_do_not_claim_ec_configuration_changed (test_battery_gui.InterfaceTests.test_presets_do_not_claim_ec_configuration_changed) ... ok
+test_rates_update_and_clear_stale_values_on_failure (test_battery_gui.InterfaceTests.test_rates_update_and_clear_stale_values_on_failure) ... ok
+test_running_operation_disables_actions_and_close_waits (test_battery_gui.InterfaceTests.test_running_operation_disables_actions_and_close_waits) ... ok
+test_startup_only_reads_windows_and_defaults_are_conservative (test_battery_gui.InterfaceTests.test_startup_only_reads_windows_and_defaults_are_conservative) ... ok
+test_telemetry_queries_do_not_overlap (test_battery_gui.InterfaceTests.test_telemetry_queries_do_not_overlap) ... ok
+test_source_start_requests_admin_before_creating_window (test_battery_gui.LaunchTests.test_source_start_requests_admin_before_creating_window) ... ok
+test_command_line_keeps_existing_observation_default (test_battery_gui.NativeNoObservationTests.test_command_line_keeps_existing_observation_default) ... ok
+test_gui_path_finishes_after_readback_without_sampling_or_observing (test_battery_gui.NativeNoObservationTests.test_gui_path_finishes_after_readback_without_sampling_or_observing) ... ok
+test_discharge_power_and_multiple_batteries (test_battery_gui.RateTests.test_discharge_power_and_multiple_batteries) ... ok
+test_relative_and_unknown_units_are_not_watts (test_battery_gui.RateTests.test_relative_and_unknown_units_are_not_watts) ... ok
+test_unknown_is_not_displayed_as_zero (test_battery_gui.RateTests.test_unknown_is_not_displayed_as_zero) ... ok
+test_threshold_boundaries (test_battery_gui.ThresholdTests.test_threshold_boundaries) ... ok
+test_enable_parameters_and_windowed_logging (test_battery_gui.WorkerTests.test_enable_parameters_and_windowed_logging) ... ok
+test_failure_is_logged_without_retry (test_battery_gui.WorkerTests.test_failure_is_logged_without_retry) ... ok
+test_flag_actions_use_the_flag_backend_without_charging_commands (test_battery_gui.WorkerTests.test_flag_actions_use_the_flag_backend_without_charging_commands) ... ok
+test_initial_discharge_requires_explicit_selection (test_battery_gui.WorkerTests.test_initial_discharge_requires_explicit_selection) ... ok
+test_inspect_never_enables_writes (test_battery_gui.WorkerTests.test_inspect_never_enables_writes) ... ok
+test_invalid_request_rejected_before_backend (test_battery_gui.WorkerTests.test_invalid_request_rejected_before_backend) ... ok
+test_permission_or_missing_resources_prevent_backend (test_battery_gui.WorkerTests.test_permission_or_missing_resources_prevent_backend) ... ok
+test_all_byte_values_preserve_the_other_seven_bits (test_ec_power_flag.FlagCommandTests.test_all_byte_values_preserve_the_other_seven_bits) ... ok
+test_busy_or_unknown_firmware_rejected_before_any_write (test_ec_power_flag.FlagCommandTests.test_busy_or_unknown_firmware_rejected_before_any_write) ... ok
+test_failure_ack_and_readback_mismatch_do_not_retry (test_ec_power_flag.FlagCommandTests.test_failure_ack_and_readback_mismatch_do_not_retry) ... ok
+test_firmware_setter_preserves_a_concurrent_unrelated_change (test_ec_power_flag.FlagCommandTests.test_firmware_setter_preserves_a_concurrent_unrelated_change) ... ok
+test_invalid_bit_values_never_write (test_ec_power_flag.FlagCommandTests.test_invalid_bit_values_never_write) ... ok
+test_timeout_poisons_without_retry_or_rollback (test_ec_power_flag.FlagCommandTests.test_timeout_poisons_without_retry_or_rollback) ... ok
+test_transport_exposes_only_the_flag_mailbox_not_a_whole_byte_write (test_ec_power_flag.FlagCommandTests.test_transport_exposes_only_the_flag_mailbox_not_a_whole_byte_write) ... ok
+test_read_does_not_enable_writes_and_always_closes_bridge (test_ec_power_flag.FlagExecutionTests.test_read_does_not_enable_writes_and_always_closes_bridge) ... ok
+test_setting_enables_writes_and_failure_closes_bridge (test_ec_power_flag.FlagExecutionTests.test_setting_enables_writes_and_failure_closes_bridge) ... ok
+
+----------------------------------------------------------------------
+Ran 35 tests in 1.754s
+
+OK
+506 INFO: PyInstaller: 6.17.0, contrib hooks: 2025.10
+506 INFO: Python: 3.13.5 (conda)
+518 INFO: Platform: Windows-11-10.0.26300-SP0
+518 INFO: Python environment: C:\Users\48069\miniconda3
+532 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\48069\\Documents\\Codex\\2026-10-30\\2-bios-dsdt-ec-bios-v31\\work\\battery_gui_edit',
+ 'C:\\Users\\48069\\miniconda3\\python313.zip',
+ 'C:\\Users\\48069\\miniconda3\\DLLs',
+ 'C:\\Users\\48069\\miniconda3\\Lib',
+ 'C:\\Users\\48069\\miniconda3',
+ 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages',
+ 'C:\\Users\\48069\\Documents\\Codex\\2026-10-30\\2-bios-dsdt-ec-bios-v31\\work\\battery_gui_edit']
+1467 INFO: Appending 'datas' from .spec
+1468 INFO: checking Analysis
+1468 INFO: Building Analysis because Analysis-00.toc is non existent
+1468 INFO: Looking for Python shared library...
+1468 INFO: Using Python shared library: C:\Users\48069\miniconda3\python313.dll
+1468 INFO: Running Analysis Analysis-00.toc
+1468 INFO: Target bytecode optimization level: 1
+1468 INFO: Initializing module dependency graph...
+1470 INFO: Initializing module graph hook caches...
+1530 INFO: Analyzing modules for base_library.zip ...
+3791 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks'
+4074 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks'
+6052 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks'
+7635 INFO: Caching module dependency graph...
+7683 INFO: Analyzing C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\battery_gui.py
+7738 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks'
+7755 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+7756 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+8269 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks'
+8366 INFO: Processing module hooks (post-graph stage)...
+8368 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks'
+8377 INFO: Performing binary vs. data reclassification (930 entries)
+9028 INFO: Looking for ctypes DLLs
+9041 INFO: Analyzing run-time hooks ...
+9042 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9045 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'C:\\Users\\48069\\miniconda3\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9065 INFO: Creating base_library.zip...
+9322 INFO: Looking for dynamic libraries
+9542 INFO: Extra DLL search directories (AddDllDirectory): []
+9543 INFO: Extra DLL search directories (PATH): []
+10656 INFO: Warnings written to C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\build\BatteryThreshold\warn-BatteryThreshold.txt
+10667 INFO: Graph cross-reference written to C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\build\BatteryThreshold\xref-BatteryThreshold.html
+10695 INFO: checking PYZ
+10696 INFO: Building PYZ because PYZ-00.toc is non existent
+10696 INFO: Building PYZ (ZlibArchive) C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\build\BatteryThreshold\PYZ-00.pyz
+11298 INFO: Building PYZ (ZlibArchive) C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\build\BatteryThreshold\PYZ-00.pyz completed successfully.
+11315 INFO: checking PKG
+11316 INFO: Building PKG because PKG-00.toc is non existent
+11316 INFO: Building PKG (CArchive) BatteryThresholdCheck.pkg
+14348 INFO: Building PKG (CArchive) BatteryThresholdCheck.pkg completed successfully.
+14360 INFO: Bootloader C:\Users\48069\miniconda3\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+14360 INFO: checking EXE
+14360 INFO: Building EXE because EXE-00.toc is non existent
+14360 INFO: Building EXE from EXE-00.toc
+14361 INFO: Copying bootloader EXE to C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\dist\BatteryThresholdCheck.exe
+14401 INFO: Copying icon to EXE
+14438 INFO: Copying 0 resources to EXE
+14438 INFO: Embedding manifest in EXE
+14472 INFO: Appending PKG archive to EXE
+14566 INFO: Fixing EXE headers
+14774 INFO: Building EXE from EXE-00.toc completed successfully.
+14803 INFO: checking PKG
+14803 INFO: Building PKG because PKG-01.toc is non existent
+14803 INFO: Building PKG (CArchive) BatteryThreshold.pkg
+17744 INFO: Building PKG (CArchive) BatteryThreshold.pkg completed successfully.
+17756 INFO: Bootloader C:\Users\48069\miniconda3\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+17756 INFO: checking EXE
+17756 INFO: Building EXE because EXE-01.toc is non existent
+17756 INFO: Building EXE from EXE-01.toc
+17757 INFO: Copying bootloader EXE to C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\dist\BatteryThreshold.exe
+17806 INFO: Copying icon to EXE
+17844 INFO: Copying 0 resources to EXE
+17844 INFO: Embedding manifest in EXE
+17879 INFO: Appending PKG archive to EXE
+17975 INFO: Fixing EXE headers
+18186 INFO: Building EXE from EXE-01.toc completed successfully.
+18198 INFO: Build complete! The results are available in: C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\dist
+Verified requireAdministrator and identical payload (1003 entries).
+Built and checked: C:\Users\48069\Documents\Codex\2026-10-30\2-bios-dsdt-ec-bios-v31\work\battery_gui_edit\dist\BatteryThreshold.exe

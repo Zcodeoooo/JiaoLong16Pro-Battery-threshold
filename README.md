@@ -118,7 +118,9 @@ NativeDisable.cmd
 
 ---
 
+## 开源许可
 
+[开源许可](LICENSE.txt)
 
 > 📝 **更新日期**：2026-10-07  
 > 🔬 **技术基础**：基于 Insyde BIOS + IT5570 EC 逆向分析
